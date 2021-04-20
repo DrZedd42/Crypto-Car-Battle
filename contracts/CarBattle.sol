@@ -1,4 +1,4 @@
-pragma solidity ^0.6.2;
+pragma solidity ^0.8.0;
 
 import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC721/ERC721.sol";
 
@@ -18,7 +18,7 @@ contract CarBattle is ERC721 {
         uint amount;
         address payable p2;
         uint p2CarId;
-        address winner;
+        address payable winner;
         bool ended;
         uint createdAt;
     }
@@ -26,7 +26,7 @@ contract CarBattle is ERC721 {
     Car[] public cars;
     Battle[] public battles;
     address public owner;
-    
+    //address payable public _winner;
     constructor () ERC721("Car", "CAR") public {
         owner = msg.sender;
     }
@@ -42,7 +42,7 @@ contract CarBattle is ERC721 {
         require(msg.value > 0);
         require(ownerOf(_p1CarId) == msg.sender);
         uint id = battles.length;
-        battles.push(Battle(id, msg.sender, _p1CarId, _score, msg.value, address(0), 0, address(0), false, now));
+        battles.push(Battle(id, payable(msg.sender), _p1CarId, _score, msg.value,  payable(address(0)),0, payable(address(0)), false, block.timestamp));
     }
     
     function acceptBattle (uint _battleId, uint _p2CarId) public payable {
@@ -51,7 +51,7 @@ contract CarBattle is ERC721 {
         require(ownerOf(_p2CarId) == msg.sender);
         
         Battle storage b = battles[_battleId];
-        b.p2 = msg.sender;
+        b.p2 = payable(msg.sender);
         b.p2CarId = _p2CarId;
     }
     
@@ -59,12 +59,12 @@ contract CarBattle is ERC721 {
         require(msg.sender == battles[_battleId].p2);
         Battle storage b = battles[_battleId];
         if(_score < b.scoreToBeat) {
-            b.winner = b.p2;
+            b.winner = payable(b.p2);
             upgradeLevel(b.p2CarId);
             b.p2.transfer(b.amount * 2);
             b.ended = true;
         } else if (_score > b.scoreToBeat) {
-            b.winner = b.p1;
+            b.winner = payable(b.p1);
             upgradeLevel(b.p1CarId);
             b.p1.transfer(b.amount * 2);
             b.ended = true;
@@ -84,7 +84,7 @@ contract CarBattle is ERC721 {
     }
     
     function cancelBattle (uint _battleId) public {
-        require(now > battles[_battleId].createdAt + 86400);
+        require(block.timestamp > battles[_battleId].createdAt + 86400);
         Battle storage b = battles[_battleId];
         b.p1.transfer(b.amount);
         b.ended = true;
